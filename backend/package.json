@@ -1,0 +1,19 @@
+{
+  "name": "physics-diagnosis-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "seed": "node src/seed-faq.js"
+  },
+  "dependencies": {
+    "@tencent-ai/agent-sdk": "^0.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.0",
+    "pg": "^8.20.0",
+    "ws": "^8.18.0"
+  }
+}

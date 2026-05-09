@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply text-gray-800 antialiased;
+    overscroll-behavior: none;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+  }
+  .input-field {
+    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all duration-200;
+    /* 防止iOS自动缩放：字体不小于16px */
+    font-size: 16px;
+  }
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+}
+
+/* ===== 移动端键盘弹出/收起修复 ===== */
+
+/* 诊断页面 - 使用 visualViewport 让输入区域始终可见 */
+.diagnosis-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 消息区域 - 键盘弹出时自动缩小高度 */
+.diagnosis-messages {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* 防止键盘收起后鬼畜 */
+  scroll-behavior: auto;
+}
+
+/* 输入区域 - 键盘弹出时固定在可视区域底部 */
+.diagnosis-input-area {
+  flex-shrink: 0;
+  /* 防止iOS键盘弹出时页面抖动 */
+  position: relative;
+}
+
+/* 防止移动端弹性滚动导致的页面鬼畜 */
+html, body {
+  overflow: hidden;
+  height: 100%;
+  position: fixed;
+  width: 100%;
+}
+
+#root {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
