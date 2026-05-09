@@ -133,6 +133,26 @@ const DEFAULT_QUESTIONS = [
     keywords:['A','D','摩擦力','反作用力','牛顿第三','平衡力'],
     hint:'提示：注意区分作用力与反作用力和平衡力。', difficulty:3 },
 
+  // === 科学探究 - 提出问题 ===
+  { core_dimension:'scientific_inquiry', sub_dimension:'questioning',
+    core_dim_label:'科学探究', sub_dim_label:'提出问题',
+    exercise_type:'experiment', exercise_type_label:'实验探究课',
+    question:'（实验题）为了验证"物体质量越大，惯性越大"，请设计一个实验方案。你需要哪些器材？怎样操作？观察什么现象？',
+    keywords:['实验设计','控制变量','质量不同','相同力','观察运动','改变难易','加速度'],
+    hint:'提示：想想怎么让不同质量的物体受到相同的力？可以借助斜面或弹簧。', difficulty:3 },
+  { core_dimension:'scientific_inquiry', sub_dimension:'rational_inquiry',
+    core_dim_label:'科学探究', sub_dim_label:'理性探究',
+    exercise_type:'experiment', exercise_type_label:'实验探究课',
+    question:'（实验题）给你一个弹簧测力计、一个木块、一块木板和一卷棉布，请设计实验探究"滑动摩擦力的大小与接触面粗糙程度的关系"。写出实验步骤和需要记录的数据。',
+    keywords:['控制变量','压力不变','粗糙程度','弹簧测力计','匀速拉动','读数','对比'],
+    hint:'提示：要控制什么变量不变？改变什么？怎样测量摩擦力的大小？', difficulty:3 },
+  { core_dimension:'scientific_inquiry', sub_dimension:'reporting',
+    core_dim_label:'科学探究', sub_dim_label:'表达交流',
+    exercise_type:'experiment', exercise_type_label:'实验探究课',
+    question:'在做"验证牛顿第二定律"实验时，你的实验结果显示加速度a与力F的关系图线没有通过原点，而是有一个正截距。请分析可能的原因，并提出改进方案。',
+    keywords:['未通过原点','摩擦力','平衡摩擦力','倾斜木板','补偿','系统误差','改进'],
+    hint:'提示：有没有可能是摩擦力没有被完全平衡？实验中怎么平衡摩擦力？', difficulty:4 },
+
   // === 科学态度与责任 - STSE ===
   { core_dimension:'scientific_attitude', sub_dimension:'stse',
     core_dim_label:'科学态度与责任', sub_dim_label:'STSE',
@@ -153,22 +173,39 @@ const DEFAULT_QUESTIONS = [
  */
 export function seedQuestions() {
   const count = db.prepare('SELECT COUNT(*) as c FROM questions').get().c;
-  if (count > 0) {
-    console.log(`题库表已有 ${count} 道题，跳过播种。`);
+  if (count >= DEFAULT_QUESTIONS.length) {
+    console.log(`题库表已有 ${count} 道题（预期 ${DEFAULT_QUESTIONS.length}），跳过播种。`);
     return;
   }
+  if (count > 0 && count < DEFAULT_QUESTIONS.length) {
+    console.log(`⚠️ 题库表有 ${count} 道题，但预期 ${DEFAULT_QUESTIONS.length} 道，将补充缺少的题目。`);
+  }
+
+  // 获取现有题目文本，避免重复插入
+  const existingTexts = new Set(
+    db.prepare('SELECT question_text FROM questions').all().map(r => r.question_text)
+  );
 
   const stmt = db.prepare(
     'INSERT INTO questions (core_dimension, sub_dimension, core_dim_label, sub_dim_label, exercise_type, exercise_type_label, question_text, keywords, hint, difficulty) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   );
   db.exec('BEGIN TRANSACTION');
+  let added = 0;
   for (const q of DEFAULT_QUESTIONS) {
+    if (existingTexts.has(q.question)) {
+      continue;
+    }
     stmt.run(q.core_dimension, q.sub_dimension, q.core_dim_label, q.sub_dim_label,
       q.exercise_type, q.exercise_type_label, q.question,
       JSON.stringify(q.keywords), q.hint, q.difficulty);
+    added++;
   }
   db.exec('COMMIT');
-  console.log(`✅ 播种 ${DEFAULT_QUESTIONS.length} 道预置题目到题库。`);
+  if (added > 0) {
+    console.log(`✅ 补充播种 ${added} 道新题目到题库（共 ${count + added} 道）。`);
+  } else {
+    console.log(`✅ 题库已完整，无需补充。`);
+  }
 }
 
 /**
@@ -176,7 +213,29 @@ export function seedQuestions() {
  */
 export function loadQuestions() {
   const rows = db.prepare(
-    'SELECT * FROM questions WHERE active = 1 ORDER BY core_dimension, sub_dimension, difficulty'
+    `SELECT * FROM questions WHERE active = 1 
+     ORDER BY 
+       CASE core_dimension
+         WHEN 'physical_concept' THEN 1
+         WHEN 'scientific_thinking' THEN 2
+         WHEN 'scientific_inquiry' THEN 3
+         WHEN 'scientific_attitude' THEN 4
+         ELSE 5
+       END,
+       CASE sub_dimension
+         WHEN 'knowledge_application' THEN 1
+         WHEN 'model_construction' THEN 2
+         WHEN 'analytical_reasoning' THEN 3
+         WHEN 'critical_innovation' THEN 4
+         WHEN 'questioning' THEN 5
+         WHEN 'rational_inquiry' THEN 6
+         WHEN 'reporting' THEN 7
+         WHEN 'inquiry_awareness' THEN 8
+         WHEN 'collaboration' THEN 9
+         WHEN 'stse' THEN 10
+         ELSE 99
+       END,
+       difficulty`
   ).all();
   return rows.map(r => ({
     ...r,
