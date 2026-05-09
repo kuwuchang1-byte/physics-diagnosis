@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import http from 'http';
 import { WebSocketServer } from 'ws';
 import db from './db.js';
@@ -27,12 +29,25 @@ const wss = new WebSocketServer({ server, path: '/ws' });
 app.use(cors());
 app.use(express.json());
 
+// 静态文件 — 前端构建产物
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
 // API routes
 app.use('/api/students', studentsRouter);
 app.use('/api/diagnosis', diagnosisRouter);
 app.use('/api/faq', faqRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/questions', questionsRouter);
+
+// SPA fallback — 所有非 API、非 WS 的请求返回 index.html
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/ws')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
 
 // ===== WebSocket 诊断会话处理 =====
 const activeSessions = new Map();
